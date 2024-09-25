@@ -32,12 +32,12 @@ fun main(args: Array<String>) {
     }
 
     val checkedSet = LinkedHashSet<Fact>()
-    while (true) {
+    loop@while (true) {
         val a = queue.poll()!!
-        if (tryDerive(a, a)) break
+        if (tryDerive(a, a)) break@loop
         for (b in checkedSet) {
-            if (tryDerive(a, b)) break
-            if (tryDerive(b, a)) break
+            if (tryDerive(a, b)) break@loop
+            if (tryDerive(b, a)) break@loop
         }
         checkedSet += a
         if (checkedSet.size % theoremsPrintStat == 0) println("Checked ${checkedSet.size} theorems, queued ${enqueued.size}")
