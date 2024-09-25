@@ -5,7 +5,7 @@ fun main(args: Array<String>) {
     val theoremsPrintStat = 1000
 
     val targetSet = args.map { it.toFormula().normalize() }
-    val queue = PriorityQueue<Fact>(compareBy { it.formula.complexity })
+    val queue = PriorityQueue(compareBy<Fact> { it.formula.complexity }.thenBy { it.depth })
     val enqueued = HashSet<Formula>()
 
     fun enqueue(fact: Fact): Boolean {
@@ -31,16 +31,15 @@ fun main(args: Array<String>) {
         return false
     }
 
-    val derivedSet = LinkedHashSet<Fact>()
-
+    val checkedSet = LinkedHashSet<Fact>()
     while (true) {
         val a = queue.poll()!!
         if (tryDerive(a, a)) break
-        for (b in derivedSet) {
+        for (b in checkedSet) {
             if (tryDerive(a, b)) break
             if (tryDerive(b, a)) break
         }
-        derivedSet += a
-        if (derivedSet.size % theoremsPrintStat == 0) println("Derived ${derivedSet.size} theorems")
+        checkedSet += a
+        if (checkedSet.size % theoremsPrintStat == 0) println("Checked ${checkedSet.size} theorems, queued ${enqueued.size}")
     }
 }
