@@ -3,10 +3,10 @@ val logicAxioms: List<Axiom> = listOf(
     "(A -> B) -> (A -> B -> C) -> A -> C", // 2
     "A & B -> A", // 3
     "A & B -> B", // 4
-    "A -> B -> A | B", // 5
+    "A -> B -> A & B", // 5
     "A -> A | B", // 6
     "B -> A | B", // 7
-    "(A -> C) -> (B -> C) -> (A & B -> C)", // 8
+    "(A -> C) -> (B -> C) -> (A | B -> C)", // 8
     "(A -> B) -> (A -> !B) -> !A", // 9
     "!!A -> A", // 10
 ).mapIndexed { i, s -> Axiom((i + 1).toString(), s.toFormula().normalize()) }
