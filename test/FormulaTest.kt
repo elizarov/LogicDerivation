@@ -1,12 +1,13 @@
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class FormulaTest {
     @Test
     fun testToString() {
-        val a = Variable("A")
-        val b = Variable("B")
-        val c = Variable("C")
+        val a = makeVariable("A")
+        val b = makeVariable("B")
+        val c = makeVariable("C")
         assertEquals("A", a.toString())
         assertEquals("!A", Negation(a).toString())
         assertEquals("A & B", (Conjunction(a, b)).toString())
@@ -24,11 +25,27 @@ class FormulaTest {
 
     @Test
     fun testSubstitution() {
-        val a = Variable("A")
-        val b = Variable("B")
-        val c = Variable("C")
+        val a = makeVariable("A")
+        val b = makeVariable("B")
+        val c = makeVariable("C")
         assertEquals("A -> C".toFormula(), "A -> B".toFormula().substitute(mapOf(b to c)))
         assertEquals("C & B".toFormula(), "A & B".toFormula().substitute(mapOf(a to c)))
         assertEquals("!(C | B) -> C".toFormula(), "!(A | B) -> C".toFormula().substitute(mapOf(a to c)))
+    }
+
+    @Test
+    fun testCache() {
+        val a = makeVariable("A")
+        val b = makeVariable("B")
+        val c = makeVariable("C")
+        val notA = makeFormula(Operation.Negation, a)
+        assertTrue(notA.cacheIndex >= 0)
+        assertEquals("!A", notA.toString())
+        val aAndB = makeFormula(Operation.Conjunction, a, b)
+        assertTrue(aAndB.cacheIndex >= 0)
+        assertEquals("A & B", aAndB.toString())
+        val aOrBimpliesC = makeFormula(Operation.Implication, makeFormula(Operation.Disjunction, a, b), c)
+        assertTrue(aOrBimpliesC.cacheIndex >= 0)
+        assertEquals("(A | B) -> C", aOrBimpliesC.toString())
     }
 }

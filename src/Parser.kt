@@ -29,10 +29,10 @@ private class Parser(var string: String) {
     }
 
     fun parseVariableOrNegation(): Formula = when (val cur = token) {
-        is Token.Variable -> Variable(cur.name).also { next() }
+        is Token.Variable -> makeVariable(cur.name).also { next() }
         is Token.Negation -> {
             next()
-            Negation(parseVariableOrNegation())
+            makeFormula(Operation.Negation, parseVariableOrNegation())
         }
         is Token.OpenBrace -> {
             next()
@@ -48,7 +48,7 @@ private class Parser(var string: String) {
         var result = parseVariableOrNegation()
         while (token == Token.Conjunction) {
             next()
-            result = Conjunction(result, parseVariableOrNegation())
+            result = makeFormula(Operation.Conjunction, result, parseVariableOrNegation())
         }
         return result
     }
@@ -57,7 +57,7 @@ private class Parser(var string: String) {
         var result = parseConjunction()
         while (token == Token.Disjunction) {
             next()
-            result = Disjunction(result, parseConjunction())
+            result = makeFormula(Operation.Disjunction, result, parseConjunction())
         }
         return result
     }
@@ -66,7 +66,7 @@ private class Parser(var string: String) {
         var result = parseDisjunction()
         if (token == Token.Implication) {
             next()
-            return Implication(result, parseImplication())
+            return makeFormula(Operation.Implication, result, parseImplication())
         }
         return result
     }
