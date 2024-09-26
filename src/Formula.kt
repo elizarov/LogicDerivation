@@ -12,6 +12,8 @@ enum class Precedence { Variable, Negation, Conjunction, Disjunction, Implicatio
     fun braceAround(inner: Precedence) = this < inner || this == Implication && (inner == Conjunction || inner == Disjunction)
 }
 
+private val hashPrime = 1000003
+
 sealed class Formula {
     abstract val token: Token
     abstract val parts: List<Formula>
@@ -35,6 +37,7 @@ data class Variable(val name: String) : Formula() {
     override fun extractVariables(): Set<Variable> = setOf(this)
     override fun updateParts(parts: List<Formula>): Formula = this.also { check(parts.isEmpty()) }
     override fun substitute(map: Map<Variable, Formula>) = map[this]?.takeIf { this != it }?.substitute(map) ?: this
+    override fun hashCode(): Int = name.hashCode()
 }
 
 data class Negation(val a: Formula) : Formula() {
@@ -44,6 +47,9 @@ data class Negation(val a: Formula) : Formula() {
     override fun toString(): String = "!${a.toString(Precedence.Negation)}"
     override fun updateParts(parts: List<Formula>): Formula =
         if (parts == this.parts) this else Negation(parts[0]).also { check(parts.size == 1) }
+    private var _hash = 0
+    override fun hashCode(): Int = if (_hash != 0) _hash else
+        (a.hashCode() * hashPrime + 1).also { _hash = it }
 }
 
 data class Conjunction(val a: Formula, val b: Formula) : Formula() {
@@ -53,6 +59,9 @@ data class Conjunction(val a: Formula, val b: Formula) : Formula() {
     override fun toString(): String = "${a.toString(Precedence.Conjunction)} & ${b.toString(Precedence.Conjunction, true)}"
     override fun updateParts(parts: List<Formula>): Formula =
         if (parts == this.parts) this else Conjunction(parts[0], parts[1]).also { check(parts.size == 2) }
+    private var _hash = 0
+    override fun hashCode(): Int = if (_hash != 0) _hash else
+        ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 2).also { _hash = it }
 }
 
 data class Disjunction(val a: Formula, val b: Formula) : Formula() {
@@ -62,6 +71,9 @@ data class Disjunction(val a: Formula, val b: Formula) : Formula() {
     override fun toString(): String = "${a.toString(Precedence.Disjunction)} | ${b.toString(Precedence.Disjunction, true)}"
     override fun updateParts(parts: List<Formula>): Formula =
         if (parts == this.parts) this else Disjunction(parts[0], parts[1]).also { check(parts.size == 2) }
+    private var _hash = 0
+    override fun hashCode(): Int = if (_hash != 0) _hash else
+        ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 3).also { _hash = it }
 }
 
 data class Implication(val a: Formula, val b: Formula) : Formula() {
@@ -71,4 +83,7 @@ data class Implication(val a: Formula, val b: Formula) : Formula() {
     override fun toString(): String = "${a.toString(Precedence.Implication, true)} -> ${b.toString(Precedence.Implication)}"
     override fun updateParts(parts: List<Formula>): Formula =
         if (parts == this.parts) this else Implication(parts[0], parts[1]).also { check(parts.size == 2) }
+    private var _hash = 0
+    override fun hashCode(): Int = if (_hash != 0) _hash else
+        ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 4).also { _hash = it }
 }
