@@ -44,7 +44,7 @@ fun main(args: Array<String>) {
         checkedSet += a
         if (checkedSet.size % theoremsPrintStat == 0) {
             val speed = (start.elapsedNow() / enqueued.size).inWholeNanoseconds
-            println("Checked ${checkedSet.size} theorems, queued ${enqueued.size} at $speed ns per theorem")
+            println("# Current complexity is ${a.formula.complexity}; checked ${checkedSet.size} theorems, queued ${enqueued.size} at $speed ns per theorem")
         }
     }
 }

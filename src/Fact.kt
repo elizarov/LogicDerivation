@@ -44,8 +44,11 @@ fun Fact.explainDerivation(): List<String> {
         is Axiom -> toString()
         is Theorem -> "[${ids[formula]}] $formula"
     }
+    var mostComplex: Formula = formula
+    var depth = 0
     fun Fact.explainDerivationImpl() {
         if (!explained.add(this)) return
+        if (formula.complexity > mostComplex.complexity) mostComplex = formula
         when (this) {
             is Axiom -> result += toString()
             is Theorem -> {
@@ -55,6 +58,7 @@ fun Fact.explainDerivation(): List<String> {
                 val map = unify(premise.formula, shiftedImpl.a)!!
                 val id = makeId(nextId++)
                 val s = "${premise.withId()}, ${implication.withId()}"
+                depth++
                 result += "MP: $s"
                 result += "    ${"-".repeat(s.length)}"
                 result += "        [$id] $formula"
@@ -69,5 +73,7 @@ fun Fact.explainDerivation(): List<String> {
         }
     }
     explainDerivationImpl()
+    result += "# Derivation depth is $depth"
+    result += "# Derivation complexity is ${mostComplex.complexity} with $mostComplex"
     return result
 }
