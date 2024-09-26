@@ -21,4 +21,14 @@ class FormulaTest {
         assertEquals("A & (B & C)", (Conjunction(a, Conjunction(b, c))).toString())
         assertEquals("A | B | C", (Disjunction(Disjunction(a, b), c)).toString())
     }
+
+    @Test
+    fun testSubstitution() {
+        val a = Variable("A")
+        val b = Variable("B")
+        val c = Variable("C")
+        assertEquals("A -> C".toFormula(), "A -> B".toFormula().substitute(mapOf(b to c)))
+        assertEquals("C & B".toFormula(), "A & B".toFormula().substitute(mapOf(a to c)))
+        assertEquals("!(C | B) -> C".toFormula(), "!(A | B) -> C".toFormula().substitute(mapOf(a to c)))
+    }
 }
