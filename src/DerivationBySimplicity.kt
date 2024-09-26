@@ -1,6 +1,8 @@
 import java.util.PriorityQueue
+import kotlin.time.TimeSource
 
 fun main(args: Array<String>) {
+    val start = TimeSource.Monotonic.markNow()
     val complexityPrintThreshold = 10
     val theoremsPrintStat = 1000
 
@@ -40,6 +42,9 @@ fun main(args: Array<String>) {
             if (tryDerive(b, a)) break@loop
         }
         checkedSet += a
-        if (checkedSet.size % theoremsPrintStat == 0) println("Checked ${checkedSet.size} theorems, queued ${enqueued.size}")
+        if (checkedSet.size % theoremsPrintStat == 0) {
+            val speed = (start.elapsedNow() / enqueued.size).inWholeNanoseconds
+            println("Checked ${checkedSet.size} theorems, queued ${enqueued.size} at $speed ns per theorem")
+        }
     }
 }
