@@ -9,7 +9,11 @@ private fun Formula.normalizeImpl(offset: Int, map: MutableMap<Variable, Variabl
         val name = makeName(offset + map.size)
         if (name == this.name) this else Variable(name)
     }
-    else -> updateParts(this.parts.map<Formula, Formula> { it.normalizeImpl(offset, map) })
+    else -> {
+        val a1 = a!!.normalizeImpl(offset, map)
+        val b1 = b?.normalizeImpl(offset, map)
+        if (b1 == null) updateParts1(a1) else updateParts2(a1, b1)
+    }
 }
 
 fun Formula.normalize(offset: Int = 0): Formula = normalizeImpl(offset, HashMap())

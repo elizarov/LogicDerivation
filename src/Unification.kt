@@ -81,7 +81,10 @@ private fun unifyImpl(a: Formula, b: Formula, map: HashMap<Variable, EC>): Boole
     a is Variable && b is Variable -> unifyVars(a, b, map)
     a is Variable -> unifyVarExpr(a, b, map)
     b is Variable -> unifyVarExpr(b, a, map)
-    else -> a.token == b.token && a.parts.zip(b.parts).all { unifyImpl(it.first, it.second, map) }
+    a.token != b.token -> false
+    else ->
+        (a.a?.let { unifyImpl(it, b.a!!, map) } ?: true) &&
+        (a.b?.let { unifyImpl(it, b.b!!, map) } ?: true)
 }
 
 fun unify(a: Formula, b: Formula): Map<Variable, Formula>? {
