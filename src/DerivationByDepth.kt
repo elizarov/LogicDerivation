@@ -1,6 +1,8 @@
 fun main(args: Array<String>) {
-    val targetSet = args.map { it.toFormula().normalize() }
-    val derivedList = ArrayList<Fact>(logicAxioms)
+    val axioms = axiomsByName(args[0])
+    val targetSet = args.drop(1).map { it.toFormula().normalize() }
+
+    val derivedList = ArrayList<Fact>(axioms)
     val derivedSet = derivedList.mapTo(HashSet()) { it.formula }
     println("---- Axioms ---- ")
     derivedList.forEach { println(it) }

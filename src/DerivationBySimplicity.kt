@@ -2,11 +2,13 @@ import java.util.PriorityQueue
 import kotlin.time.TimeSource
 
 fun main(args: Array<String>) {
+    val axioms = axiomsByName(args[0])
+    val targetSet = args.drop(1).map { it.toFormula().normalize() }
+
     val start = TimeSource.Monotonic.markNow()
     val complexityPrintThreshold = 10
     val theoremsPrintStat = 1000
 
-    val targetSet = args.map { it.toFormula().normalize() }
     val queue = PriorityQueue(compareBy<Fact> { it.formula.complexity }.thenBy { it.depth })
     val enqueued = HashSet<Formula>()
 
@@ -15,7 +17,7 @@ fun main(args: Array<String>) {
         queue += fact
         return true
     }
-    logicAxioms.forEach { enqueue(it) }
+    axioms.forEach { enqueue(it) }
 
     fun tryDerive(premise: Fact, implication: Fact): Boolean {
         if (implication.formula !is Implication) return false
