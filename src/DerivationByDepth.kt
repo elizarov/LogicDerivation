@@ -2,17 +2,20 @@ fun main(args: Array<String>) {
     val d = Derivation(args)
     var targetDepth = 0
     var maxVars = d.derivedList.maxOf { it.formula.variables.size }
+    val depthOffset = ArrayList<Int>()
+    depthOffset += 0
     while (!d.targetFound) {
         targetDepth++
-        println("---- Theorems at depth $targetDepth ---- ")
         val curSize = d.derivedList.size
+        depthOffset += curSize
+        println("---- Theorems at depth $targetDepth ---- ")
         for (i in 0..<curSize) {
             val implication = d.derivedList[i]
             if (implication.formula !is Implication) continue
             val impl = implication.formula.normalize(maxVars) as Implication
-            for (j in 0..<curSize) {
+            val premiseDepth = targetDepth - implication.depth - 1
+            for (j in depthOffset[premiseDepth]..<depthOffset[premiseDepth + 1]) {
                 val premise = d.derivedList[j]
-                if (premise.depth + implication.depth + 1 != targetDepth) continue
                 val map = unify(premise.formula, impl.a) ?: continue
                 val conclusion = impl.b.substitute(map).normalize()
                 if (d.add(conclusion) { Theorem(conclusion, premise, implication) }) return
