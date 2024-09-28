@@ -48,4 +48,15 @@ class FormulaTest {
         assertTrue(aOrBimpliesC.cacheIndex >= 0)
         assertEquals("(A | B) -> C", aOrBimpliesC.toString())
     }
+
+    @Test
+    fun testVariables() {
+        val a = makeVariable("A")
+        val b = makeVariable("B")
+        val c = makeVariable("C")
+        assertEquals(setOf(a), "A".toFormula().variables)
+        assertEquals(setOf(a, b), "A & B".toFormula().variables)
+        assertEquals(setOf(a, c), "!A -> C".toFormula().variables)
+        assertEquals(setOf(b), "B | !B".toFormula().variables)
+    }
 }

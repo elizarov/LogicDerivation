@@ -29,9 +29,15 @@ sealed class Formula() {
         (1 + (a?.complexity ?: 0) + (b?.complexity ?: 0)).also { _complexity = it }
     fun toString(outer: Operation, braceSame: Boolean = false): String =
         if (outer.braceAround(operation) || outer == operation && braceSame) "(${toString()})" else toString()
-    protected open fun extractVariables(): Set<Variable> = buildSet {
-        a?.let { addAll(it.variables) }
-        b?.let { addAll(it.variables) }
+    protected open fun extractVariables(): Set<Variable> {
+        val av: Set<Variable>? = a?.variables
+        val bv: Set<Variable>? = b?.variables
+        return if ((av == null || av is VariablesBitSet) && (bv == null || bv is VariablesBitSet)) {
+            variablesSetCache[(av?.bits ?: 0) or (bv?.bits ?: 0)]
+        } else buildSet {
+            av?.let { addAll(it) }
+            bv?.let { addAll(it) }
+        }
     }
     fun updateParts(a: Formula): Formula {
         require(operation.arity == 1)
@@ -48,7 +54,7 @@ data class Variable(val name: String) : Formula() {
     override val token: Token get() = Token.Variable(name)
     override val operation: Operation = Operation.Variable
     override fun toString(): String = name
-    override fun extractVariables(): Set<Variable> = setOf(this)
+    override fun extractVariables(): Set<Variable> = if (cacheIndex >= 0) variablesSetCache[1 shl cacheIndex] else setOf(this)
     override fun substitute(map: Map<Variable, Formula>) = map[this]?.takeIf { this != it }?.substitute(map) ?: this
     override fun hashCode(): Int = name.hashCode()
 }
@@ -208,5 +214,24 @@ fun makeFormula(op: Operation, a: Formula, b: Formula): Formula {
         createNewFormula(op, a, b)
 }
 
+class VariablesBitSet(val bits: Int) : AbstractSet<Variable>() {
+    override fun isEmpty(): Boolean = bits == 0
+    override val size: Int get() = bits.countOneBits()
+    override fun iterator(): Iterator<Variable> = object : AbstractIterator<Variable>() {
+        private var i = -1
+        override fun computeNext() {
+            while (i < cacheVars) {
+                i++
+                if (((1 shl i) and bits) != 0) {
+                    setNext(formulaCache[i] as Variable)
+                    return
+                }
+            }
+            done()
+        }
+    }
+}
+
+private val variablesSetCache = Array<VariablesBitSet>(1 shl cacheVars) { VariablesBitSet(it) }
 
 
