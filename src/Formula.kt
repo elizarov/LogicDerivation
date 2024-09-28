@@ -96,7 +96,7 @@ data class Implication(override val a: Formula, override val b: Formula) : Formu
         ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 4).also { _hash = it }
 }
 
-private val cacheVars = 8
+private val cacheVars = 12
 private val cacheComplexity = 6
 
 private val cacheSize = IntArray(cacheComplexity + 1).also { cachedSize ->
