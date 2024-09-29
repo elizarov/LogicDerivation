@@ -2,51 +2,37 @@ import java.util.PriorityQueue
 import kotlin.time.TimeSource
 
 fun main(args: Array<String>) {
-    val axioms = axiomsByName(args[0])
-    val targetSet = args.drop(1).map { it.toFormula().normalize() }
-
+    val d = Derivation(args)
     val start = TimeSource.Monotonic.markNow()
-    val complexityPrintThreshold = 10
+    val complexityPrintThreshold = 7
     val theoremsPrintStat = 1000
-
     val queue = PriorityQueue(compareBy<Fact> { it.formula.complexity }.thenBy { it.depth })
-    val enqueued = HashSet<Formula>()
-
-    fun enqueue(fact: Fact): Boolean {
-        if (!enqueued.add(fact.formula)) return false
-        queue += fact
-        return true
-    }
-    axioms.forEach { enqueue(it) }
+    for (fact in d.derivedList) queue += fact
 
     fun tryDerive(premise: Fact, implication: Fact): Boolean {
         if (implication.formula !is Implication) return false
         val impl = implication.formula.normalize(premise.formula.variables.size) as Implication
         val map = unify(premise.formula, impl.a) ?: return false
         val conclusion = impl.b.substitute(map).normalize()
-        val theorem = Theorem(conclusion, premise, implication)
-        if (!enqueue(theorem)) return false
-        if (conclusion.complexity <= complexityPrintThreshold) println(theorem)
-        if (conclusion in targetSet) {
-            println("=== FOUND TARGET THEOREM $conclusion === ")
-            theorem.explainDerivation().forEach { println(it) }
-            return true
-        }
+        val fact = d.add(conclusion) { Theorem(conclusion, premise, implication) } ?: return false
+        if (d.targetFound) return true
+        queue += fact
+        if (conclusion.complexity <= complexityPrintThreshold) println(fact)
         return false
     }
 
-    val checkedSet = LinkedHashSet<Fact>()
+    val checkedFacts = ArrayList<Fact>()
     loop@while (true) {
         val a = queue.poll()!!
         if (tryDerive(a, a)) break@loop
-        for (b in checkedSet) {
+        for (b in checkedFacts) {
             if (tryDerive(a, b)) break@loop
             if (tryDerive(b, a)) break@loop
         }
-        checkedSet += a
-        if (checkedSet.size % theoremsPrintStat == 0) {
-            val speed = (start.elapsedNow() / enqueued.size).inWholeNanoseconds
-            println("# Current complexity is ${a.formula.complexity}; checked ${checkedSet.size} theorems, queued ${enqueued.size} at $speed ns per theorem")
+        checkedFacts += a
+        if (checkedFacts.size % theoremsPrintStat == 0) {
+            val speed = (start.elapsedNow() / (checkedFacts.size + queue.size)).inWholeNanoseconds
+            println("# Current complexity is ${a.formula.complexity}; checked ${checkedFacts.size} facts, queued ${queue.size} at $speed ns per theorem")
         }
     }
 }

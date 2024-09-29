@@ -18,10 +18,11 @@ fun main(args: Array<String>) {
                 val premise = d.derivedList[j]
                 val map = unify(premise.formula, impl.a) ?: continue
                 val conclusion = impl.b.substitute(map).normalize()
-                if (d.add(conclusion) { Theorem(conclusion, premise, implication) }) return
+                d.add(conclusion) { Theorem(conclusion, premise, implication) }
+                if (d.targetFound) return
             }
         }
-        val topN = 20
+        val topN = 10
         val newList = d.derivedList.subList(curSize, d.derivedList.size)
         println("Found ${newList.size} theorems, top $topN simplest ones")
         newList.sortedBy { it.formula.complexity }.take(topN).forEach { println(it) }

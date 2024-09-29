@@ -6,51 +6,55 @@ class Derivation(args: Array<String>) {
     }
 
     val axioms = axiomsByName(args[0])
-    val targetSet: MutableSet<Formula> = args.drop(1).flatMap { s ->
+    val targetTheorems = args.drop(1).flatMap { s ->
         if (s.startsWith("+")) axiomsByName(s.drop(1)).map { it.formula } else listOf(s.toFormula().normalize())
-    }.toMutableSet()
+    }
+    val remainingTargets = targetTheorems.toMutableSet()
     val derivedList = ArrayList<Fact>()
     val derivedSet = HashSet<Formula>()
     var targetFound = false
 
     init {
-        val targets = targetSet.toList()
         println("---- Axioms ---- ")
         axioms.forEach {
             println(it)
             add(it.formula, silent = true) { it }
         }
-        if (targets.isNotEmpty()) {
+        if (targetTheorems.isNotEmpty()) {
             println("----- Target theorems -----")
-            targets.forEach { formula ->
+            targetTheorems.forEach { formula ->
                 print(formula)
-                if (formula !in targetSet) print("  //  === FOUND IN AXIOMS ===")
+                if (formula !in remainingTargets) print("  //  === FOUND IN AXIOMS ===")
                 println()
             }
         }
+        printTargetStats()
     }
 
-    inline fun add(formula: Formula, silent:  Boolean = false, factBuilder: () -> Fact): Boolean {
-        if (!derivedSet.add(formula)) return false
-        return addImpl(factBuilder(), formula, silent)
+    fun printTargetStats() {
+        if (targetTheorems.isEmpty()) return
+        if (remainingTargets.isEmpty()) {
+            println("=== FOUND ALL TARGET THEOREMS ===")
+            return
+        }
+        println("# ${remainingTargets.size} target theorems out of ${targetTheorems.size} remaining")
+    }
+
+    inline fun add(formula: Formula, silent:  Boolean = false, factBuilder: () -> Fact): Fact? {
+        if (!derivedSet.add(formula)) return null
+        val fact = factBuilder()
+        addImpl(fact, formula, silent)
+        return fact
     }
 
     @PublishedApi
-    internal fun addImpl(fact: Fact, formula: Formula, silent: Boolean): Boolean {
+    internal fun addImpl(fact: Fact, formula: Formula, silent: Boolean) {
         derivedList += fact
-        if (targetSet.remove(formula)) {
-            if (!silent) {
-                println("=== FOUND TARGET THEOREM $formula === ")
-                fact.explainDerivation().forEach { println(it) }
-            }
-            if (targetSet.isEmpty()) {
-                if (!silent) {
-                    println("=== FOUND ALL TARGET THEOREMS ===")
-                }
-                targetFound = true
-                return true
-            }
-        }
-        return false
+        if (!remainingTargets.remove(formula)) return
+        if (remainingTargets.isEmpty()) targetFound = true
+        if (silent) return
+        println("=== FOUND TARGET THEOREM $formula === ")
+        fact.explainDerivation().forEach { println(it) }
+        printTargetStats()
     }
 }
