@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
                 val premise = d.derivedList[j]
                 val map = unify(premise.formula, impl.a) ?: continue
                 val conclusion = impl.b.substitute(map).normalize()
-                d.add(conclusion) { Theorem(conclusion, premise, implication) }
+                d.addDerived(conclusion) { Theorem(conclusion, premise, implication) }
                 if (d.targetFound) return
             }
         }

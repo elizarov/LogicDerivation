@@ -14,7 +14,7 @@ fun main(args: Array<String>) {
         val impl = implication.formula.normalize(premise.formula.variables.size) as Implication
         val map = unify(premise.formula, impl.a) ?: return false
         val conclusion = impl.b.substitute(map).normalize()
-        val fact = d.add(conclusion) { Theorem(conclusion, premise, implication) } ?: return false
+        val fact = d.addDerived(conclusion) { Theorem(conclusion, premise, implication) } ?: return false
         if (d.targetFound) return true
         queue += fact
         if (conclusion.complexity <= complexityPrintThreshold) println(fact)

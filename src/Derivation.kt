@@ -5,20 +5,26 @@ class Derivation(args: Array<String>) {
         }
     }
 
-    val axioms = axiomsByName(args[0])
-    val targetTheorems = args.drop(1).flatMap { s ->
+    private val axioms = axiomsByName(args[0])
+    private val targetTheorems = args.drop(1).flatMap { s ->
         if (s.startsWith("+")) axiomsByName(s.drop(1)).map { it.formula } else listOf(s.toFormula().normalize())
     }
-    val remainingTargets = targetTheorems.toMutableSet()
-    val derivedList = ArrayList<Fact>()
-    val derivedSet = HashSet<Formula>()
+    private val remainingTargets = targetTheorems.toMutableSet()
+    private val _derivedList = ArrayList<Fact>()
+
+    @PublishedApi
+    internal val derivedSet = HashSet<Formula>()
+
     var targetFound = false
+        private set
+    val derivedList: List<Fact>
+        get() = _derivedList
 
     init {
         println("---- Axioms ---- ")
         axioms.forEach {
             println(it)
-            add(it.formula, silent = true) { it }
+            addDerived(it.formula, silent = true) { it }
         }
         if (targetTheorems.isNotEmpty()) {
             println("----- Target theorems -----")
@@ -40,7 +46,7 @@ class Derivation(args: Array<String>) {
         println("# ${remainingTargets.size} target theorems out of ${targetTheorems.size} remaining")
     }
 
-    inline fun add(formula: Formula, silent:  Boolean = false, factBuilder: () -> Fact): Fact? {
+    inline fun addDerived(formula: Formula, silent:  Boolean = false, factBuilder: () -> Fact): Fact? {
         if (!derivedSet.add(formula)) return null
         val fact = factBuilder()
         addImpl(fact, formula, silent)
@@ -49,7 +55,7 @@ class Derivation(args: Array<String>) {
 
     @PublishedApi
     internal fun addImpl(fact: Fact, formula: Formula, silent: Boolean) {
-        derivedList += fact
+        _derivedList += fact
         if (!remainingTargets.remove(formula)) return
         if (remainingTargets.isEmpty()) targetFound = true
         if (silent) return
