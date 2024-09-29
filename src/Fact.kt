@@ -13,7 +13,8 @@ data class Theorem(
     val premise: Fact,
     val implication: Fact
 ) : Fact() {
-    override val depth: Int = premise.depth + implication.depth + 1
+    private var _depth = -1
+    override val depth: Int = if (_depth >= 0) _depth else (premise.depth + implication.depth + 1).also { _depth = it }
     override fun toString(): String = formula.toString()
 }
 
