@@ -1,3 +1,4 @@
+import junit.framework.TestCase.assertFalse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -66,5 +67,28 @@ class FormulaTest {
             val i = recoverVariableIndex(name)
             assertEquals(name, makeVariableName(i))
         }
+    }
+
+    @Test
+    fun testIsNormalized() {
+        assertTrue("A".toFormula().isNormalized)
+        assertFalse("B".toFormula().isNormalized)
+        assertFalse("C".toFormula().isNormalized)
+        assertTrue("!A".toFormula().isNormalized)
+        assertFalse("!B".toFormula().isNormalized)
+        assertFalse("!C".toFormula().isNormalized)
+        assertTrue("A -> A".toFormula().isNormalized)
+        assertTrue("A -> B".toFormula().isNormalized)
+        assertFalse("A -> C".toFormula().isNormalized)
+        assertFalse("B -> A".toFormula().isNormalized)
+        assertTrue("A -> (A -> A)".toFormula().isNormalized)
+        assertTrue("A -> (A -> B)".toFormula().isNormalized)
+        assertTrue("A -> (B -> C)".toFormula().isNormalized)
+        assertTrue("A -> (B -> A)".toFormula().isNormalized)
+        assertTrue("A -> (B -> B)".toFormula().isNormalized)
+        assertFalse("B -> (A -> A)".toFormula().isNormalized)
+        assertFalse("C -> (B -> A)".toFormula().isNormalized)
+        assertFalse("A -> (C -> B)".toFormula().isNormalized)
+        assertFalse("A -> (C -> C)".toFormula().isNormalized)
     }
 }

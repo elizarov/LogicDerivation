@@ -31,6 +31,8 @@ sealed class Formula() {
     private var _normalVariablesSize = -1
     val isNormalized: Boolean
         get() = _normalVariablesSize != -1
+    fun isNormalized(offset: Int): Boolean =
+        if (offset == 0) isNormalized else checkNormalized(offset)
     val normalVariablesSize: Int
         get() = _normalVariablesSize.also { check(it >= 0) }
     fun initNormalVariablesSize(i: Int) {
@@ -177,9 +179,9 @@ private val formulaCache: Array<Formula> = arrayOfNulls<Formula>(maxCacheIndex).
     var i = 0
     fun add(f: Formula) {
         f.initCacheIndex(i)
+        f.variables // computes variables for all cached formulas
+        if (f.checkNormalized()) f.initNormalVariablesSize(f.variables.size)
         formulaCache[i++] = f
-        val vars = f.variables // computes variables for all cached formulas
-        if (vars is VariablesBitSet && ((vars.bits + 1) and vars.bits) == 0) f.initNormalVariablesSize(vars.size)
     }
     for (i in 0..<cacheVars) add(Variable(makeVariableName(i), i))
     for (k in 2..cacheComplexity) {
