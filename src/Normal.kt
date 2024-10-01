@@ -1,6 +1,8 @@
 
-private fun Formula.normalizeImpl(offset: Int, map: MutableMap<Variable, Variable>): Formula = when (this) {
-    is Variable -> map.getOrPut(this) { makeVariable(offset + map.size, this) }
+private fun Formula.normalizeImpl(offset: Int, map: VariablesMap<Variable>): Formula = when (this) {
+    is Variable -> map.getOrPut(this) {
+        makeVariable(offset + map.size, this)
+    }
     else -> {
         val a1 = a!!.normalizeImpl(offset, map)
         val b1 = b?.normalizeImpl(offset, map)
@@ -10,7 +12,7 @@ private fun Formula.normalizeImpl(offset: Int, map: MutableMap<Variable, Variabl
 
 fun Formula.normalize(offset: Int = 0): Formula {
     if (isNormalized(offset)) return this
-    val map = HashMap<Variable, Variable>()
+    val map = VariablesMap<Variable>()
     val result = normalizeImpl(offset, map)
     if (offset == 0) result.initNormalVariablesSize(map.size)
     return result

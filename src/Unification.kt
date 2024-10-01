@@ -6,7 +6,7 @@ private class EC(var root: Variable, var to: Formula? = null) {
     var nextChecked: EC? = null
 }
 
-private fun check(a: Variable, map: HashMap<Variable, EC>): Boolean {
+private fun check(a: Variable, map: VariablesMap<EC>): Boolean {
     var lastChecked: EC? = null
     fun checkImpl(a: Variable): Boolean {
         val ec = map[a] ?: return true
@@ -32,7 +32,7 @@ private fun check(a: Variable, map: HashMap<Variable, EC>): Boolean {
     return true
 }
 
-private fun unifyVars(a: Variable, b: Variable, map: HashMap<Variable, EC>): Boolean {
+private fun unifyVars(a: Variable, b: Variable, map: VariablesMap<EC>): Boolean {
     val aec = map[a]
     val bec = map[b]
     val ec = when {
@@ -62,7 +62,7 @@ private fun unifyVars(a: Variable, b: Variable, map: HashMap<Variable, EC>): Boo
     return check(a, map)
 }
 
-private fun unifyVarExpr(a: Variable, b: Formula, map: HashMap<Variable, EC>): Boolean {
+private fun unifyVarExpr(a: Variable, b: Formula, map: VariablesMap<EC>): Boolean {
     val aec = map[a]
     if (aec == null) {
         map[a] = EC(a, b)
@@ -76,7 +76,7 @@ private fun unifyVarExpr(a: Variable, b: Formula, map: HashMap<Variable, EC>): B
     return unifyImpl(b, c, map)
 }
 
-private fun unifyImpl(a: Formula, b: Formula, map: HashMap<Variable, EC>): Boolean = when {
+private fun unifyImpl(a: Formula, b: Formula, map: VariablesMap<EC>): Boolean = when {
     a == b -> true
     a is Variable && b is Variable -> unifyVars(a, b, map)
     a is Variable -> unifyVarExpr(a, b, map)
@@ -88,7 +88,7 @@ private fun unifyImpl(a: Formula, b: Formula, map: HashMap<Variable, EC>): Boole
 }
 
 fun unify(a: Formula, b: Formula): Map<Variable, Formula>? {
-    val map = HashMap<Variable, EC>()
+    val map = VariablesMap<EC>()
     if (!unifyImpl(a, b, map)) return null
     return map.mapValues { it.value.to ?: it.value.root }.filter { it.key != it.value }
 }

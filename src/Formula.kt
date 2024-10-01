@@ -274,7 +274,7 @@ fun makeFormula(op: Operation, a: Formula, b: Formula): Formula {
         createNewFormula(op, a, b)
 }
 
-class VariablesBitSet(val bits: Int) : AbstractSet<Variable>() {
+private class VariablesBitSet(val bits: Int) : AbstractSet<Variable>() {
     override fun isEmpty(): Boolean = bits == 0
     override val size: Int get() = bits.countOneBits()
     override fun iterator(): Iterator<Variable> = object : AbstractIterator<Variable>() {
