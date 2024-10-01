@@ -20,41 +20,76 @@ sealed class Formula() {
     abstract val operation: Operation
     open val a: Formula? get() = null
     open val b: Formula? get() = null
-    var cacheIndex = -1; private set
-    fun initCacheIndex(i: Int) { check(cacheIndex == -1); cacheIndex = i }
+
+    var cacheIndex = -1
+        private set
+    fun initCacheIndex(i: Int) {
+        check(cacheIndex == -1)
+        cacheIndex = i
+    }
+
+    private var _normalVariablesSize = -1
+    val isNormalized: Boolean
+        get() = _normalVariablesSize != -1
+    val normalVariablesSize: Int
+        get() = _normalVariablesSize.also { check(it >= 0) }
+    fun initNormalVariablesSize(i: Int) {
+        if (i == _normalVariablesSize) return
+        check(_normalVariablesSize == -1)
+        _normalVariablesSize = i
+    }
+
     private var _variables: Set<Variable>? = null
-    val variables: Set<Variable> get() = _variables ?: extractVariables().also { _variables = it }
+    val variables: Set<Variable> get() = _variables ?: extractVariables().also {
+        if (_normalVariablesSize >= 0) check(it.size == _normalVariablesSize)
+        _variables = it
+    }
+
     private var _complexity: Int = 0
     val complexity: Int get() = if (_complexity > 0) _complexity else
         (1 + (a?.complexity ?: 0) + (b?.complexity ?: 0)).also { _complexity = it }
+
     fun toString(outer: Operation, braceSame: Boolean = false): String =
         if (outer.braceAround(operation) || outer == operation && braceSame) "(${toString()})" else toString()
+
     protected open fun extractVariables(): Set<Variable> {
         val av: Set<Variable>? = a?.variables
         val bv: Set<Variable>? = b?.variables
         return if ((av == null || av is VariablesBitSet) && (bv == null || bv is VariablesBitSet)) {
-            variablesSetCache[(av?.bits ?: 0) or (bv?.bits ?: 0)]
+            val bits = (av?.bits ?: 0) or (bv?.bits ?: 0)
+            when {
+                bits in 0..<variablesMultiSetCache.size -> variablesMultiSetCache[bits]
+                bits.countOneBits() == 1 -> variablesSingleSetCache[bits.countTrailingZeroBits()]
+                else -> VariablesBitSet(bits)
+            }
         } else buildSet {
             av?.let { addAll(it) }
             bv?.let { addAll(it) }
         }
     }
+
     fun updateParts(a: Formula): Formula {
         require(operation.arity == 1)
         return if (a == this.a) this else makeFormula(operation, a)
     }
+
     fun updateParts(a: Formula, b: Formula): Formula {
         require(operation.arity == 2)
         return if (a == this.a && b == this.b) this else makeFormula(operation, a, b)
     }
+
     open fun substitute(map: Map<Variable, Formula>): Formula = updateParts(a!!.substitute(map), b!!.substitute(map))
 }
 
-data class Variable(val name: String) : Formula() {
+data class Variable(
+    val name: String,
+    val variableIndex: Int /* or -1  */
+) : Formula() {
     override val token: Token get() = Token.Variable(name)
     override val operation: Operation = Operation.Variable
     override fun toString(): String = name
-    override fun extractVariables(): Set<Variable> = if (cacheIndex >= 0) variablesSetCache[1 shl cacheIndex] else setOf(this)
+    override fun extractVariables(): Set<Variable> =
+        if (variableIndex in 0..31) variablesSingleSetCache[variableIndex] else setOf(this)
     override fun substitute(map: Map<Variable, Formula>) = map[this]?.takeIf { this != it }?.substitute(map) ?: this
     override fun hashCode(): Int = name.hashCode()
 }
@@ -96,8 +131,15 @@ data class Implication(override val a: Formula, override val b: Formula) : Formu
         ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 4).also { _hash = it }
 }
 
+// ---------------------------- cache ----------------------------
+
 private val cacheVars = 12
 private val cacheComplexity = 6
+
+private val variablesSingleSetCache = Array<VariablesBitSet>(32) { VariablesBitSet(1 shl it) }
+private val variablesMultiSetCache = Array<VariablesBitSet>(1 shl cacheVars) {
+    if (it.countOneBits() == 1) variablesSingleSetCache[it.countTrailingZeroBits()] else VariablesBitSet(it)
+}
 
 private val cacheSize = IntArray(cacheComplexity + 1).also { cachedSize ->
     cachedSize[1] = cacheVars
@@ -136,8 +178,10 @@ private val formulaCache: Array<Formula> = arrayOfNulls<Formula>(maxCacheIndex).
     fun add(f: Formula) {
         f.initCacheIndex(i)
         formulaCache[i++] = f
+        val vars = f.variables // computes variables for all cached formulas
+        if (vars is VariablesBitSet && ((vars.bits + 1) and vars.bits) == 0) f.initNormalVariablesSize(vars.size)
     }
-    for (i in 0..<cacheVars) add(Variable(makeVariableName(i)))
+    for (i in 0..<cacheVars) add(Variable(makeVariableName(i), i))
     for (k in 2..cacheComplexity) {
         check(i == cacheOffset[k])
         for (op in Operation.entries) {
@@ -170,19 +214,31 @@ fun makeVariableName(i: Int): String {
     return makeVariableName((i - 26) / 26) + ch
 }
 
+private const val maxPrefix = (Int.MAX_VALUE - 26) / 26 - 1
+
+fun recoverVariableIndex(name: String): Int {
+    val ch = name.last()
+    if (ch !in 'A'..'Z') return -1
+    if (name.length == 1) return ch - 'A'
+    val prefix = recoverVariableIndex(name.dropLast(1))
+    if (prefix == -1) return -1
+    if (prefix > maxPrefix) return -1
+    return (prefix + 1) * 26 + (ch - 'A')
+}
+
 fun makeVariable(i: Int, origin: Variable? = null): Variable {
     require(i >= 0)
     if (i < cacheVars) return formulaCache[i] as Variable
     val name = makeVariableName(i)
-    if (origin?.name == name) return origin
-    return Variable(name)
+    if (origin != null && origin.name == name && origin.variableIndex == i) return origin
+    return Variable(name, i)
 }
 
 fun makeVariable(name: String): Variable {
     require(name.isNotEmpty())
-    return if (name.length == 1 && name[0] in 'A'..<'A' + cacheVars)
-        formulaCache[name[0] - 'A'] as Variable
-        else Variable(name)
+    val i = recoverVariableIndex(name)
+    if (i < 0) return Variable(name, -1)
+    return if (i < cacheVars) formulaCache[i] as Variable else Variable(name, i)
 }
 
 private fun createNewFormula(op: Operation, a: Formula): Formula = when(op) {
@@ -220,10 +276,11 @@ class VariablesBitSet(val bits: Int) : AbstractSet<Variable>() {
     override fun iterator(): Iterator<Variable> = object : AbstractIterator<Variable>() {
         private var i = -1
         override fun computeNext() {
-            while (i < cacheVars) {
+            while (true) {
                 i++
+                if (i >= 32) break
                 if (((1 shl i) and bits) != 0) {
-                    setNext(formulaCache[i] as Variable)
+                    setNext(makeVariable(i))
                     return
                 }
             }
@@ -231,7 +288,5 @@ class VariablesBitSet(val bits: Int) : AbstractSet<Variable>() {
         }
     }
 }
-
-private val variablesSetCache = Array<VariablesBitSet>(1 shl cacheVars) { VariablesBitSet(it) }
 
 

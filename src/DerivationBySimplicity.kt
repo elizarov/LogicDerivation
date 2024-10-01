@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
 
     fun tryDerive(premise: Fact, implication: Fact): Boolean {
         if (implication.formula !is Implication) return false
-        val impl = implication.formula.normalize(premise.formula.variables.size) as Implication
+        val impl = implication.formula.normalize(premise.formula.normalVariablesSize) as Implication
         val map = unify(premise.formula, impl.a) ?: return false
         val conclusion = impl.b.substitute(map).normalize()
         val fact = d.addDerived(conclusion) { Theorem(conclusion, premise, implication) } ?: return false

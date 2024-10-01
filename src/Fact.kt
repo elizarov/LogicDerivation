@@ -42,7 +42,7 @@ fun Fact.explainDerivation(): List<String> {
             is Theorem -> {
                 premise.explainDerivationImpl()
                 implication.explainDerivationImpl()
-                val shiftedImpl = implication.formula.normalize(premise.formula.variables.size) as Implication
+                val shiftedImpl = implication.formula.normalize(premise.formula.normalVariablesSize) as Implication
                 val map = unify(premise.formula, shiftedImpl.a)!!
                 val id = makeId(nextId++)
                 val s = "${premise.withId()}, ${implication.withId()}"

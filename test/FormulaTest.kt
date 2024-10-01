@@ -59,4 +59,12 @@ class FormulaTest {
         assertEquals(setOf(a, c), "!A -> C".toFormula().variables)
         assertEquals(setOf(b), "B | !B".toFormula().variables)
     }
+
+    @Test
+    fun testVariableNames() {
+        for (name in listOf("A", "Z", "AA", "ABC", "CBA", "ZX")) {
+            val i = recoverVariableIndex(name)
+            assertEquals(name, makeVariableName(i))
+        }
+    }
 }

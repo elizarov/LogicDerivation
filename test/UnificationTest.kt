@@ -4,10 +4,10 @@ import kotlin.test.assertEquals
 class UnificationTest {
     @Test
     fun testUnification() {
-        val a = Variable("A")
-        val b = Variable("B")
-        val c = Variable("C")
-        val d = Variable("D")
+        val a = makeVariable("A")
+        val b = makeVariable("B")
+        val c = makeVariable("C")
+        val d = makeVariable("D")
         assertEquals(mapOf(b to a), unify("A".toFormula(), "B".toFormula()))
         assertEquals(mapOf(c to "A -> B".toFormula()), unify("A -> B".toFormula(), "C".toFormula()))
         assertEquals(mapOf(c to a, d to b), unify("A -> B".toFormula(), "C -> D".toFormula()))

@@ -1,7 +1,7 @@
 fun main(args: Array<String>) {
     val d = Derivation(args)
     var targetDepth = 0
-    var maxVars = d.derivedList.maxOf { it.formula.variables.size }
+    var maxVars = d.derivedList.maxOf { it.formula.normalVariablesSize }
     val depthOffset = ArrayList<Int>()
     depthOffset += 0
     while (!d.targetFound) {
@@ -26,6 +26,6 @@ fun main(args: Array<String>) {
         val newList = d.derivedList.subList(curSize, d.derivedList.size)
         println("Found ${newList.size} theorems, top $topN simplest ones")
         newList.sortedBy { it.formula.complexity }.take(topN).forEach { println(it) }
-        maxVars = maxOf(maxVars, newList.maxOf { it.formula.variables.size })
+        maxVars = maxOf(maxVars, newList.maxOf { it.formula.normalVariablesSize })
     }
 }

@@ -8,4 +8,10 @@ private fun Formula.normalizeImpl(offset: Int, map: MutableMap<Variable, Variabl
     }
 }
 
-fun Formula.normalize(offset: Int = 0): Formula = normalizeImpl(offset, HashMap())
+fun Formula.normalize(offset: Int = 0): Formula {
+    if (offset == 0 && isNormalized) return this
+    val map = HashMap<Variable, Variable>()
+    val result = normalizeImpl(offset, map)
+    if (offset == 0) result.initNormalVariablesSize(map.size)
+    return result
+}
