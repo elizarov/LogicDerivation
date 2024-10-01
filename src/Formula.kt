@@ -138,6 +138,8 @@ data class Implication(override val a: Formula, override val b: Formula) : Formu
 private val cacheVars = 12
 private val cacheComplexity = 6
 
+
+private val variableSingleCache = Array(255) { i -> Variable(makeVariableName(i), i) }
 private val variablesSingleSetCache = Array<VariablesBitSet>(32) { VariablesBitSet(1 shl it) }
 private val variablesMultiSetCache = Array<VariablesBitSet>(1 shl cacheVars) {
     if (it.countOneBits() == 1) variablesSingleSetCache[it.countTrailingZeroBits()] else VariablesBitSet(it)
@@ -183,7 +185,7 @@ private val formulaCache: Array<Formula> = arrayOfNulls<Formula>(maxCacheIndex).
         if (f.checkNormalized()) f.initNormalVariablesSize(f.variables.size)
         formulaCache[i++] = f
     }
-    for (i in 0..<cacheVars) add(Variable(makeVariableName(i), i))
+    for (i in 0..<cacheVars) add(variableSingleCache[i])
     for (k in 2..cacheComplexity) {
         check(i == cacheOffset[k])
         for (op in Operation.entries) {
@@ -230,7 +232,7 @@ fun recoverVariableIndex(name: String): Int {
 
 fun makeVariable(i: Int, origin: Variable? = null): Variable {
     require(i >= 0)
-    if (i < cacheVars) return formulaCache[i] as Variable
+    if (i < variableSingleCache.size) return variableSingleCache[i]
     val name = makeVariableName(i)
     if (origin != null && origin.name == name && origin.variableIndex == i) return origin
     return Variable(name, i)
@@ -240,7 +242,7 @@ fun makeVariable(name: String): Variable {
     require(name.isNotEmpty())
     val i = recoverVariableIndex(name)
     if (i < 0) return Variable(name, -1)
-    return if (i < cacheVars) formulaCache[i] as Variable else Variable(name, i)
+    return if (i < variableSingleCache.size) variableSingleCache[i] else Variable(name, i)
 }
 
 private fun createNewFormula(op: Operation, a: Formula): Formula = when(op) {
