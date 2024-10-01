@@ -90,5 +90,10 @@ private fun unifyImpl(a: Formula, b: Formula, map: VariablesMap<EC>): Boolean = 
 fun unify(a: Formula, b: Formula): Map<Variable, Formula>? {
     val map = VariablesMap<EC>()
     if (!unifyImpl(a, b, map)) return null
-    return map.mapValues { it.value.to ?: it.value.root }.filter { it.key != it.value }
+    val result = VariablesMap<Formula>()
+    for ((k, v) in map) {
+        val to = v.to ?: v.root
+        if (k != to) result[k] = to
+    }
+    return result
 }
