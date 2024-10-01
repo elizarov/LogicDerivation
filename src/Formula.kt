@@ -13,7 +13,9 @@ enum class Operation(val arity: Int) {
     fun braceAround(inner: Operation) = this < inner || this == Implication && (inner == Conjunction || inner == Disjunction)
 }
 
-private val hashPrime = 1000003
+private const val hashPrime0 = 1000003
+private const val hashPrime1 = 1000033
+private const val hashPrime2 = 1000037
 
 sealed class Formula() {
     abstract val token: Token
@@ -88,49 +90,52 @@ data class Variable(
     val variableIndex: Int /* or -1  */
 ) : Formula() {
     override val token: Token get() = Token.Variable(name)
-    override val operation: Operation = Operation.Variable
+    override val operation: Operation get() = Operation.Variable
     override fun toString(): String = name
     override fun extractVariables(): Set<Variable> =
         if (variableIndex in 0..31) variablesSingleSetCache[variableIndex] else setOf(this)
     override fun substitute(map: Map<Variable, Formula>) = map[this]?.takeIf { this != it }?.substitute(map) ?: this
-    override fun hashCode(): Int = name.hashCode()
+    override fun hashCode(): Int {
+        if (variableIndex >= 0) return variableIndex + 1
+        return name.hashCode()
+    }
 }
 
 data class Negation(override val a: Formula) : Formula() {
     override val token: Token get() = Token.Negation
-    override val operation: Operation = Operation.Negation
+    override val operation: Operation get() = Operation.Negation
     override fun toString(): String = "!${a.toString(Operation.Negation)}"
     override fun substitute(map: Map<Variable, Formula>): Formula = updateParts(a.substitute(map))
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
-        (a.hashCode() * hashPrime + 1).also { _hash = it }
+        (a.hashCode() * hashPrime0 + 1).also { _hash = it }
 }
 
 data class Conjunction(override val a: Formula, override val b: Formula) : Formula() {
     override val token: Token get() = Token.Conjunction
-    override val operation: Operation = Operation.Conjunction
+    override val operation: Operation get() = Operation.Conjunction
     override fun toString(): String = "${a.toString(Operation.Conjunction)} & ${b.toString(Operation.Conjunction, true)}"
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
-        ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 2).also { _hash = it }
+        ((a.hashCode() * hashPrime1 xor b.hashCode() * hashPrime2) + 2).also { _hash = it }
 }
 
 data class Disjunction(override val a: Formula, override val b: Formula) : Formula() {
     override val token: Token get() = Token.Disjunction
-    override val operation: Operation = Operation.Disjunction
+    override val operation: Operation get() = Operation.Disjunction
     override fun toString(): String = "${a.toString(Operation.Disjunction)} | ${b.toString(Operation.Disjunction, true)}"
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
-        ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 3).also { _hash = it }
+        ((a.hashCode() * hashPrime1 xor b.hashCode() * hashPrime2) + 3).also { _hash = it }
 }
 
 data class Implication(override val a: Formula, override val b: Formula) : Formula() {
     override val token: Token get() = Token.Implication
-    override val operation: Operation = Operation.Implication
+    override val operation: Operation get() = Operation.Implication
     override fun toString(): String = "${a.toString(Operation.Implication, true)} -> ${b.toString(Operation.Implication)}"
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
-        ((a.hashCode() * hashPrime + b.hashCode()) * hashPrime + 4).also { _hash = it }
+        ((a.hashCode() * hashPrime1 xor b.hashCode() * hashPrime2) + 4).also { _hash = it }
 }
 
 // ---------------------------- cache ----------------------------
