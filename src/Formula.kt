@@ -141,8 +141,7 @@ data class Implication(override val a: Formula, override val b: Formula) : Formu
 // ---------------------------- cache ----------------------------
 
 private val cacheVars = 12
-private val cacheComplexity = 6
-
+private val cacheComplexity = 7
 
 private val variableSingleCache = Array(255) { i -> Variable(makeVariableName(i), i) }
 private val variablesSingleSetCache = Array<VariablesBitSet>(32) { VariablesBitSet(1 shl it) }
