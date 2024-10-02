@@ -13,9 +13,9 @@ enum class Operation(val arity: Int) {
     fun braceAround(inner: Operation) = this < inner || this == Implication && (inner == Conjunction || inner == Disjunction)
 }
 
-private const val hashPrime0 = 1000003
-private const val hashPrime1 = 1000033
-private const val hashPrime2 = 1000037
+private const val hashPrime0 = 1348147639
+private const val hashPrime1 = 1003826653
+private const val hashPrime2 = 2002905017
 
 sealed class Formula() {
     abstract val token: Token
