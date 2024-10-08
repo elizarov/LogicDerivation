@@ -8,8 +8,14 @@ sealed class Token {
     data object ClosingBrace : Token() { override fun toString() = ")" }
 }
 
-enum class Operation(val arity: Int) {
-    Variable(0), Negation(1), Conjunction(2), Disjunction(2), Implication(2);
+private val maxCacheComplexity = 9
+
+enum class Operation(val arity: Int, val cacheComplexity: Int = 1) {
+    Variable(0),
+    Negation(1, maxCacheComplexity),
+    Conjunction(2),
+    Disjunction(2),
+    Implication(2, maxCacheComplexity);
     fun braceAround(inner: Operation) = this < inner || this == Implication && (inner == Conjunction || inner == Disjunction)
 }
 
@@ -141,7 +147,6 @@ data class Implication(override val a: Formula, override val b: Formula) : Formu
 // ---------------------------- cache ----------------------------
 
 private val cacheVars = 12
-private val cacheComplexity = 7
 
 private val variableSingleCache = Array(255) { i -> Variable(makeVariableName(i), i) }
 private val variablesSingleSetCache = Array<VariablesBitSet>(32) { VariablesBitSet(1 shl it) }
@@ -149,10 +154,10 @@ private val variablesMultiSetCache = Array<VariablesBitSet>(1 shl cacheVars) {
     if (it.countOneBits() == 1) variablesSingleSetCache[it.countTrailingZeroBits()] else VariablesBitSet(it)
 }
 
-private val cacheSize = IntArray(cacheComplexity + 1).also { cachedSize ->
+private val cacheSize = IntArray(maxCacheComplexity + 1).also { cachedSize ->
     cachedSize[1] = cacheVars
-    for (k in 2..cacheComplexity) {
-        for (op in Operation.entries) {
+    for (k in 2..maxCacheComplexity) {
+        for (op in Operation.entries) if (k <= op.cacheComplexity){
             when (op.arity) {
                 1 -> cachedSize[k] += cachedSize[k - 1]
                 2 -> for (l in 1..k - 2) {
@@ -163,20 +168,20 @@ private val cacheSize = IntArray(cacheComplexity + 1).also { cachedSize ->
     }
 }
 
-private val cacheOffset = IntArray(cacheComplexity + 2).also { cachedOffset ->
-    for (i in 1..cacheComplexity + 1) cachedOffset[i] = cachedOffset[i - 1] + cacheSize[i - 1]
+private val cacheOffset = IntArray(maxCacheComplexity + 2).also { cachedOffset ->
+    for (i in 1..maxCacheComplexity + 1) cachedOffset[i] = cachedOffset[i - 1] + cacheSize[i - 1]
 }
 
-private val maxCacheIndex = cacheOffset[cacheComplexity + 1]
+private val maxCacheIndex = cacheOffset[maxCacheComplexity + 1]
 private val cacheOps = Operation.entries.size - 1
 
-private val cacheIndex = IntArray((cacheComplexity - 1) * cacheOps * (cacheComplexity - 2))
+private val cacheIndex = IntArray((maxCacheComplexity - 1) * cacheOps * (maxCacheComplexity - 2))
 
 private fun computeIndex(k: Int, op: Operation, l: Int): Int {
-    require(k in 2..cacheComplexity)
+    require(k in 2..maxCacheComplexity)
     require(op.ordinal in 1..cacheOps)
-    require(l in 1..cacheComplexity - 2)
-    return ((k - 2) * cacheOps + op.ordinal - 1) * (cacheComplexity - 2) + l - 1
+    require(l in 1..maxCacheComplexity - 2)
+    return ((k - 2) * cacheOps + op.ordinal - 1) * (maxCacheComplexity - 2) + l - 1
 }
 
 private fun baseIndex(k: Int, op: Operation, l: Int): Int = cacheIndex[computeIndex(k, op, l)]
@@ -190,9 +195,9 @@ private val formulaCache: Array<Formula> = arrayOfNulls<Formula>(maxCacheIndex).
         formulaCache[i++] = f
     }
     for (i in 0..<cacheVars) add(variableSingleCache[i])
-    for (k in 2..cacheComplexity) {
+    for (k in 2..maxCacheComplexity) {
         check(i == cacheOffset[k])
-        for (op in Operation.entries) {
+        for (op in Operation.entries) if (k <= op.cacheComplexity){
             when (op.arity) {
                 1 -> {
                     cacheIndex[computeIndex(k, op, 1)] = i
@@ -213,7 +218,7 @@ private val formulaCache: Array<Formula> = arrayOfNulls<Formula>(maxCacheIndex).
         }
     }
     check(i == maxCacheIndex)
-    println("Cached $maxCacheIndex formulas (up to $cacheVars vars, up to $cacheComplexity in complexity)")
+    println("Cached $maxCacheIndex formulas (up to $cacheVars vars, up to $maxCacheComplexity in complexity)")
 } as Array<Formula>
 
 fun makeVariableName(i: Int): String {
@@ -263,7 +268,7 @@ private fun createNewFormula(op: Operation, a: Formula, b: Formula): Formula = w
 
 fun makeFormula(op: Operation, a: Formula): Formula {
     require(op.arity == 1)
-    return if (a.cacheIndex >= 0 && a.complexity < cacheComplexity) {
+    return if (a.cacheIndex >= 0 && a.complexity < maxCacheComplexity) {
         formulaCache[baseIndex(a.complexity + 1, op, 1) + a.cacheIndex - cacheOffset[a.complexity]]
     } else
         createNewFormula(op, a)
@@ -271,7 +276,7 @@ fun makeFormula(op: Operation, a: Formula): Formula {
 
 fun makeFormula(op: Operation, a: Formula, b: Formula): Formula {
     require(op.arity == 2)
-    return if (a.cacheIndex >= 0 && b.cacheIndex >= 0 && a.complexity + b.complexity < cacheComplexity) {
+    return if (a.cacheIndex >= 0 && b.cacheIndex >= 0 && a.complexity + b.complexity < op.cacheComplexity) {
         formulaCache[baseIndex(a.complexity + b.complexity + 1, op, a.complexity) +
             (a.cacheIndex - cacheOffset[a.complexity]) * cacheSize[b.complexity] + b.cacheIndex - cacheOffset[b.complexity]]
     } else

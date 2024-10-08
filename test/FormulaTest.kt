@@ -42,12 +42,12 @@ class FormulaTest {
         val notA = makeFormula(Operation.Negation, a)
         assertTrue(notA.cacheIndex >= 0)
         assertEquals("!A", notA.toString())
-        val aAndB = makeFormula(Operation.Conjunction, a, b)
-        assertTrue(aAndB.cacheIndex >= 0)
-        assertEquals("A & B", aAndB.toString())
-        val aOrBimpliesC = makeFormula(Operation.Implication, makeFormula(Operation.Disjunction, a, b), c)
-        assertTrue(aOrBimpliesC.cacheIndex >= 0)
-        assertEquals("(A | B) -> C", aOrBimpliesC.toString())
+        val aThenB = makeFormula(Operation.Implication, a, b)
+        assertTrue(aThenB.cacheIndex >= 0)
+        assertEquals("A -> B", aThenB.toString())
+        val aThenBThenNotC = makeFormula(Operation.Implication, makeFormula(Operation.Implication, a, b), makeFormula(Operation.Negation, c))
+        assertTrue(aThenBThenNotC.cacheIndex >= 0)
+        assertEquals("(A -> B) -> !C", aThenBThenNotC.toString())
     }
 
     @Test
