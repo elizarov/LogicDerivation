@@ -15,7 +15,7 @@ fun main(args: Array<String>) {
         val map = unify(premise.formula, impl.a) ?: return false
         val conclusion = impl.b.substitute(map).normalize()
         val fact = d.addDerived(conclusion) { Theorem(conclusion, premise, implication) } ?: return false
-        if (d.targetFound) return true
+        if (d.stop) return true
         queue += fact
         if (conclusion.complexity <= complexityPrintThreshold) println(fact)
         return false

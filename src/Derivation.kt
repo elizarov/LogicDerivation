@@ -13,7 +13,7 @@ class Derivation(args: Array<String>) {
     @PublishedApi
     internal val derivedSet = HashSet<Formula>()
 
-    var targetFound = false
+    var stop = false
         private set
     val derivedList: List<Fact>
         get() = _derivedList
@@ -28,7 +28,13 @@ class Derivation(args: Array<String>) {
             println("----- Target theorems -----")
             targetTheorems.forEach { formula ->
                 print(formula)
-                if (formula !in remainingTargets) print("  //  === FOUND IN AXIOMS ===")
+                if (formula !in remainingTargets) {
+                    print("  //  === FOUND IN AXIOMS ===")
+                }
+                if (!formula.isValid()) {
+                    println("  // === !!! IT IS NOT VALID !!! ===")
+                    stop = true
+                }
                 println()
             }
         }
@@ -55,7 +61,7 @@ class Derivation(args: Array<String>) {
     internal fun addImpl(fact: Fact, formula: Formula, silent: Boolean) {
         _derivedList += fact
         if (!remainingTargets.remove(formula)) return
-        if (remainingTargets.isEmpty()) targetFound = true
+        if (remainingTargets.isEmpty()) stop = true
         if (silent) return
         println("=== FOUND TARGET THEOREM $formula === ")
         fact.explainDerivation().forEach { println(it) }

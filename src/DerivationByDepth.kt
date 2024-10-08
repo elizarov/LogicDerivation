@@ -4,7 +4,7 @@ fun main(args: Array<String>) {
     var maxVars = d.derivedList.maxOf { it.formula.normalVariablesSize }
     val depthOffset = ArrayList<Int>()
     depthOffset += 0
-    while (!d.targetFound) {
+    while (!d.stop) {
         targetDepth++
         val curSize = d.derivedList.size
         depthOffset += curSize
@@ -19,7 +19,7 @@ fun main(args: Array<String>) {
                 val map = unify(premise.formula, impl.a) ?: continue
                 val conclusion = impl.b.substitute(map).normalize()
                 d.addDerived(conclusion) { Theorem(conclusion, premise, implication) }
-                if (d.targetFound) return
+                if (d.stop) return
             }
         }
         val topN = 10
