@@ -14,5 +14,7 @@ class UnificationTest {
         assertEquals(mapOf(c to a, d to a), unify("A -> A".toFormula(), "C -> D".toFormula()))
         assertEquals(null, unify("(A | B) -> A".toFormula(), "F -> (G -> F) -> H".toFormula()))
         assertEquals(null, unify("((A -> A) -> !(A -> A)) -> !(A -> A)".toFormula(), "(B -> !(C -> B))".toFormula()))
+        assertEquals(mapOf(c to a), unify("(A->B)->((B->C)->(A->C))".toFormula(), "(A->B)->((B->A)->(A->A))".toFormula()))
+        assertEquals(mapOf(a to "B->C".toFormula()), unify("A->A".toFormula(), "(B->C)->(B->C)".toFormula()))
     }
 }
