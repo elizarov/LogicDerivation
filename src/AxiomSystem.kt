@@ -97,3 +97,10 @@ fun axiomsByName(desc: String): List<Axiom> =
                 ?: AxiomSystem.entries.single { it.name.startsWith(s, ignoreCase = true) })
                 .axioms
         }.flatten().distinct()
+
+fun String.toFormulaList(): List<Formula> {
+    val s = this
+    if (s.startsWith("+")) return axiomsByName(s.drop(1)).map { it.formula }
+    return AxiomSystem.entries.singleOrNull { it.name.equals(s, ignoreCase = true) }?.axioms?.map { it.formula } ?:
+        listOf(s.toFormula().normalize())
+}

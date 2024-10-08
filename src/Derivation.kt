@@ -6,9 +6,7 @@ class Derivation(args: Array<String>) {
     }
 
     private val axioms = axiomsByName(args[0])
-    private val targetTheorems = args.drop(1).flatMap { s ->
-        if (s.startsWith("+")) axiomsByName(s.drop(1)).map { it.formula } else listOf(s.toFormula().normalize())
-    }
+    private val targetTheorems = args.drop(1).flatMap { s -> s.toFormulaList() }
     private val remainingTargets = targetTheorems.toMutableSet()
     private val _derivedList = ArrayList<Fact>()
 
