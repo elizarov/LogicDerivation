@@ -89,6 +89,15 @@ sealed class Formula() {
     }
 
     open fun substitute(map: Map<Variable, Formula>): Formula = updateParts(a!!.substitute(map), b!!.substitute(map))
+
+    fun equalsImpl(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Formula) return false
+        if (this.cacheIndex >= 0) return other.cacheIndex == this.cacheIndex
+        if (other.cacheIndex >= 0) return false
+        if (hashCode() != other.hashCode()) return false
+        return operation == other.operation && a == other.a && b == other.b
+    }
 }
 
 data class Variable(
@@ -115,6 +124,7 @@ data class Negation(override val a: Formula) : Formula() {
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
         (a.hashCode() * hashPrime0 + 1).also { _hash = it }
+    override fun equals(other: Any?): Boolean = equalsImpl(other)
 }
 
 data class Conjunction(override val a: Formula, override val b: Formula) : Formula() {
@@ -124,6 +134,7 @@ data class Conjunction(override val a: Formula, override val b: Formula) : Formu
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
         ((a.hashCode() * hashPrime1 xor b.hashCode() * hashPrime2) + 2).also { _hash = it }
+    override fun equals(other: Any?): Boolean = equalsImpl(other)
 }
 
 data class Disjunction(override val a: Formula, override val b: Formula) : Formula() {
@@ -133,6 +144,7 @@ data class Disjunction(override val a: Formula, override val b: Formula) : Formu
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
         ((a.hashCode() * hashPrime1 xor b.hashCode() * hashPrime2) + 3).also { _hash = it }
+    override fun equals(other: Any?): Boolean = equalsImpl(other)
 }
 
 data class Implication(override val a: Formula, override val b: Formula) : Formula() {
@@ -142,6 +154,7 @@ data class Implication(override val a: Formula, override val b: Formula) : Formu
     private var _hash = 0
     override fun hashCode(): Int = if (_hash != 0) _hash else
         ((a.hashCode() * hashPrime1 xor b.hashCode() * hashPrime2) + 4).also { _hash = it }
+    override fun equals(other: Any?): Boolean = equalsImpl(other)
 }
 
 // ---------------------------- cache ----------------------------
