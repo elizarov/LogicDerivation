@@ -1,3 +1,5 @@
+import kotlin.time.TimeSource
+
 fun main(args: Array<String>) {
     val d = Derivation(args)
     var targetDepth = 0
@@ -9,6 +11,7 @@ fun main(args: Array<String>) {
         val curSize = d.derivedList.size
         depthOffset += curSize
         println("---- Theorems at depth $targetDepth ---- ")
+        val start = TimeSource.Monotonic.markNow()
         for (i in 0..<curSize) {
             val implication = d.derivedList[i]
             if (implication.formula !is Implication) continue
@@ -24,8 +27,10 @@ fun main(args: Array<String>) {
         }
         val topN = 10
         val newList = d.derivedList.subList(curSize, d.derivedList.size)
-        println("Found ${newList.size} theorems, top $topN simplest ones")
-        newList.sortedBy { it.formula.complexity }.take(topN).forEach { println(it) }
+        val elapsed = start.elapsedNow()
+        println("Found ${newList.size} new theorems at depth $targetDepth in ${elapsed.inWholeSeconds} seconds (${(elapsed / newList.size).inWholeNanoseconds} ns/theorem)")
+        println("Top $topN simplest theorems")
+        newList.sortedBy { it.formula.complexity }.take(topN).forEach { println("  $it") }
         maxVars = maxOf(maxVars, newList.maxOf { it.formula.normalVariablesSize })
     }
 }
